@@ -138,6 +138,8 @@ def selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, AP
         open_tickets = [tickets[i]['id'] for i in range(len(tickets)) if (tickets[i]['status'] != "solved" and tickets[i]['status'] != "closed")]
         modified_ticket = [tickets[i]['id'] for i in range(len(tickets)) if (NOW - datetime.strptime(tickets[i]['updated_at'], "%Y-%m-%dT%H:%M:%SZ") < timedelta(minutes=DELTA_MINUTES))]
         
+        logging.info(f"{len(open_tickets)} open tickets and {len(modified_ticket)} modified tickets in page {page_nb}")
+        
         # Population of full list
         all_open_tickets += open_tickets
         all_modified_tickets += modified_ticket
@@ -160,6 +162,7 @@ def run_update_ticket_logic():
     NOW = datetime.today()
 
     ticket_ids = selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, API_TOKEN)
+    logging.info(f"{len(ticket_ids)} tickets to scan")
 
     investor_coverage = load_excel_from_storage()
     investor_coverage_mod = CleanTags(investor_coverage, "InvestorAccount")
@@ -261,7 +264,7 @@ def update_ticket(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.function_name(name="update_ticket_timer")
 @app.schedule(
-    schedule="0 */5 * * * *",  # toutes les 5 minutes
+    schedule="0 */5 * * * *",  # every 5 minutes
     arg_name="mytimer",
     run_on_startup=False,
     use_monitor=True
