@@ -116,8 +116,8 @@ def put_email_IR(ticket_id, investors, emails_coverage, emails_support, USER_EMA
 
 #===========================================================================
 # 4) Perform a GET Query on Zendesk to extract the list of tickets to change
-#===========================================================================
-def selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, API_TOKEN):
+#==========================================================================
+def selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, API_TOKEN, FULL_UPDATE):
     
     all_possible_statuses = ['solved', 'new', 'closed', 'pending', 'open']
     tickets = ['init_']
@@ -139,7 +139,7 @@ def selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, AP
         modified_ticket = [tickets[i]['id'] for i in range(len(tickets)) if (NOW - datetime.strptime(tickets[i]['updated_at'], "%Y-%m-%dT%H:%M:%SZ") < timedelta(minutes=DELTA_MINUTES))]
         
         logging.info(f"{len(open_tickets)} open tickets and {len(modified_ticket)} modified tickets in page {page_nb}")
-        
+
         # Population of full list
         all_open_tickets += open_tickets
         all_modified_tickets += modified_ticket
@@ -147,7 +147,12 @@ def selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, AP
         # Incrementation of the page
         page_nb += 1
     
-    tickets_to_keep = list(set(all_open_tickets).intersection(all_modified_tickets))
+    if FULL_UPDATE:
+        logging.info("Full update, all open tickets will be scanned")
+        tickets_to_keep = all_open_tickets
+    else:
+        logging.info(f"Partial update, only tickets that are open and modified in the last {DELTA_MINUTES} minutes will be scanned")
+        tickets_to_keep = list(set(all_open_tickets).intersection(all_modified_tickets))
     return tickets_to_keep
 
 
@@ -159,9 +164,10 @@ def run_update_ticket_logic():
     API_TOKEN = os.environ["ZENDESK_TOKEN"]
     DELTA_MINUTES = int(os.environ['LATENCY_LAST_MODIFIED_MINUTES'])
     FIRST_PAGE = int(os.environ['FIRST_PAGE_TO_CHECK'])
+    FULL_UPDATE = os.environ['FULL_UPDATE'] == "True"
     NOW = datetime.today()
 
-    ticket_ids = selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, API_TOKEN)
+    ticket_ids = selection_of_relevant_tickets(FIRST_PAGE, NOW, DELTA_MINUTES, USER_EMAIL, API_TOKEN, FULL_UPDATE)
     logging.info(f"{len(ticket_ids)} tickets to scan")
 
     investor_coverage = load_excel_from_storage()
