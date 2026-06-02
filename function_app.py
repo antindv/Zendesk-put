@@ -220,7 +220,9 @@ def run_update_ticket_logic():
             coverage = ""
             support = ""
         else:
-            logging.info(f"Investor found for {ticket_id}.")
+            logging.info(f"Investor found for {ticket_id}: {merged['Investor'].dropna().drop_duplicates().tolist()}")
+            logging.info(f"Coverage email found for {ticket_id}: {merged['Coverage Person Email'].dropna().drop_duplicates().tolist()}")
+            logging.info(f"Support email found for {ticket_id}: {merged['Coverage Support Email'].dropna().drop_duplicates().tolist()}")
             investors = ",".join(merged["Investor"].dropna().drop_duplicates())
             coverage = ",".join(merged["Coverage Person Email"].dropna().drop_duplicates())
             support = ",".join(merged["Coverage Support Email"].dropna().drop_duplicates())
