@@ -39,7 +39,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
-          app-name: 'azure-cas-checker'
+          app-name: 'aip-function-zendesk-put-prod'
           package: .
           scm-do-build-during-deployment: true
           enable-oryx-build: true
