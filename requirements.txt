@@ -3,10 +3,3 @@
 # azure-monitor-opentelemetry 
 
 azure-functions
-azure-storage-blob
-azure-identity
-pandas
-numpy==1.26.4
-openpyxl
-requests
-datetime

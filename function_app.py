@@ -1,65 +1,65 @@
 import azure.functions as func
-import logging
-import warnings
-import unicodedata
-import pandas as pd
-import io
-import os
 import json
-import subprocess
-import requests
-from datetime import datetime, timedelta
+import logging
 
+app = func.FunctionApp()
 
-# =============================================================
-# 6) ENDPOINTS UTILITAIRES / DEBUG
-# =============================================================
-@app.function_name(name="ping")
-@app.route(route="ping", methods=["GET"])
-def ping(req: func.HttpRequest) -> func.HttpResponse:
-    return func.HttpResponse("pong", status_code=200)
+@app.route(route="calc", auth_level=func.AuthLevel.ANONYMOUS, methods=["GET", "POST"])
+def calc(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Calc function triggered.")
 
+    # Récupère a et b depuis la query string
+    a = req.params.get("a")
+    b = req.params.get("b")
 
-@app.function_name(name="test_packages")
-@app.route(route="test-packages", methods=["GET"])
-def test_packages(req: func.HttpRequest) -> func.HttpResponse:
-    results = {}
-
-    packages_to_test = {
-        "requests": "requests",
-        "pandas": "pandas",
-        "numpy": "numpy",
-        "azure-functions": "azure.functions",
-        "azure-identity": "azure.identity",
-        "azure-storage-blob": "azure.storage.blob",
-        "openpyxl": "openpyxl"
-    }
-
-    for display_name, import_path in packages_to_test.items():
+    # Si manquants en query, essaie dans le body JSON
+    if not (a and b):
         try:
-            module = __import__(import_path, fromlist=["*"])
-            version = getattr(module, "__version__", "unknown")
-            results[display_name] = {
-                "status": "OK",
-                "version": version
-            }
-        except Exception as e:
-            results[display_name] = {
-                "status": "KO",
-                "error": str(e)
-            }
+            body = req.get_json()
+        except ValueError:
+            body = {}
+        a = a or body.get("a")
+        b = b or body.get("b")
 
-    # Status global
-    all_ok = all(v["status"] == "OK" for v in results.values())
-
-    return func.HttpResponse(
-        body=json.dumps(
+    if a is None or b is None:
+        return _json_response(
             {
-                "overall_status": "OK" if all_ok else "KO",
-                "packages": results
+                "error": "Missing 'a' or 'b'.",
+                "usage": {
+                    "query_example": "/api/calc?a=5&b=7",
+                    "body_example": {"a": 5, "b": 7},
+                },
             },
-            indent=2
-        ),
+            status_code=400,
+        )
+
+    try:
+        a_val = float(a)
+        b_val = float(b)
+    except ValueError:
+        return _json_response(
+            {
+                "error": "'a' and 'b' must be numbers.",
+                "received": {"a": a, "b": b},
+            },
+            status_code=400,
+        )
+
+    result = a_val + b_val
+
+    return _json_response(
+        {
+            "a": a_val,
+            "b": b_val,
+            "operation": "addition",
+            "result": result,
+        }
+    )
+
+
+def _json_response(data, status_code: int = 200) -> func.HttpResponse:
+    return func.HttpResponse(
+        json.dumps(data, ensure_ascii=False),
+        status_code=status_code,
         mimetype="application/json",
-        status_code=200 if all_ok else 500
     )
