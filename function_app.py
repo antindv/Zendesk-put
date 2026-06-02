@@ -2,7 +2,6 @@ import azure.functions as func
 import json
 import logging
 import warnings
-import pandas as pd
 import os
 import json
 import requests
