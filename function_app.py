@@ -2,12 +2,9 @@ import azure.functions as func
 import json
 import logging
 import warnings
-import unicodedata
 import pandas as pd
-import io
 import os
 import json
-import subprocess
 import requests
 from datetime import datetime, timedelta
 
